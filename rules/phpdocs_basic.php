@@ -157,34 +157,17 @@ function local_moodlecheck_functionarguments(local_moodlecheck_file $file) {
                     // Must be at least type and parameter name.
                     $match = false;
                 } else {
-                    $expectedtype = local_moodlecheck_normalise_function_type((string) $function->arguments[$i][0]);
+                    $expectedtype = local_moodlecheck_normalise_function_type((string)$function->arguments[$i][0]);
                     $expectedparam = (string)$function->arguments[$i][1];
-                    $documentedtype = local_moodlecheck_normalise_function_type((string) $documentedarguments[$i][0]);
+                    $documentedtype = local_moodlecheck_normalise_function_type((string)$documentedarguments[$i][0]);
                     $documentedparam = $documentedarguments[$i][1];
 
-                    $typematch = $expectedtype === $documentedtype;
-                    $parammatch = $expectedparam === $documentedparam;
-                    if ($typematch && $parammatch) {
-                        continue;
+                    if ($expectedparam !== $documentedparam) {
+                        $match = false;
                     }
 
-                    // Documented types can be a collection (| separated).
-                    foreach (explode('|', $documentedtype) as $documentedtype) {
-                        // Ignore null. They cannot match any type in function.
-                        if (trim($documentedtype) === 'null') {
-                            continue;
-                        }
-
-                        if (strlen($expectedtype) && $expectedtype !== $documentedtype) {
-                            // It could be a type hinted array.
-                            if ($expectedtype !== 'array' || substr($documentedtype, -2) !== '[]') {
-                                $match = false;
-                            }
-                        } else if ($documentedtype === 'type') {
-                            $match = false;
-                        } else if ($expectedparam !== $documentedparam) {
-                            $match = false;
-                        }
+                    if (!local_moodlecheck_is_documented_type_allowed($expectedtype, $documentedtype)) {
+                        $match = false;
                     }
                 }
             }
@@ -202,6 +185,49 @@ function local_moodlecheck_functionarguments(local_moodlecheck_file $file) {
         }
     }
     return $errors;
+}
+
+/**
+ * Checks if a documented type is allowed for a parameter with the given real type declaration.
+ *
+ * @param string $expectedtype the real type declaration
+ * @param string $documentedtype the type documented in PHPdoc
+ * @return bool true if allowed, false if not
+ */
+function local_moodlecheck_is_documented_type_allowed(string $expectedtype, string $documentedtype): bool {
+    if ($expectedtype === $documentedtype) {
+        return true;
+    }
+
+    // Documented types can be a collection (| separated).
+    foreach (explode('|', $documentedtype) as $documentedtype) {
+        // Ignore null. They cannot match any type in function.
+        if (trim($documentedtype) === 'null') {
+            continue;
+        }
+
+        if (strlen($expectedtype) && $expectedtype !== $documentedtype) {
+            // Allow type-hinted arrays.
+            if ($expectedtype === 'array' && substr($documentedtype, -2) === '[]') {
+                continue;
+            }
+
+            $withoutgenerics = substr($documentedtype, 0, strpos($documentedtype, "<")) ?: $documentedtype;
+            // Allow class-string<T> and the like for a string parameter.
+            if ($expectedtype === 'string' && in_array($withoutgenerics,
+                    ["class-string", "interface-string", "trait-string", "enum-string", "callable-string",
+                        "numeric-string", "literal-string", "lowercase-string", "non-empty-string",
+                        "non-empty-lowercase-string"])) {
+                continue;
+            }
+
+            return false;
+        } else if ($documentedtype === 'type') {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**

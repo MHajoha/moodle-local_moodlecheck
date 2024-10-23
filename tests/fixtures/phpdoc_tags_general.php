@@ -214,6 +214,15 @@ class fixturing_general {
     }
 
     /**
+     * Correct param types.
+     *
+     * @param class-string $myclass
+     */
+    public function correct_param_types6(string $myclass) {
+        echo "yay!";
+    }
+
+    /**
      * Incomplete return annotation (type is missing).
      *
      * @return
