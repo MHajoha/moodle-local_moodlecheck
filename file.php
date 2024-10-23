@@ -427,6 +427,17 @@ class local_moodlecheck_file {
                                     continue;
                                 }
                             }
+                            if (version_compare(PHP_VERSION, '8.0.0') >= 0) {
+                                // T_ATTRIBUTE introduced in PHP 8.0.
+                                if ($argtokens[$j][0] === T_ATTRIBUTE) {
+                                    [, $attrclose] = $this->find_tag_pair_inlist($argtokens, $j, "#[", "]");
+                                    if ($attrclose) {
+                                        // Skip the attribute.
+                                        $j = $attrclose;
+                                    }
+                                    continue;
+                                }
+                            }
                             switch ($argtokens[$j][0]) {
                                 // Skip any whitespace, or argument visibility.
                                 case T_COMMENT:

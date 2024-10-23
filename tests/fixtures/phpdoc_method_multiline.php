@@ -96,4 +96,17 @@ class something {
     ): array {
         // Do something.
     }
+
+    /**
+     * One function, what else.
+     *
+     * @param string $arg
+     * @return array
+     */
+    public function function_attribute(
+        #[some_attr]
+        string $arg
+    ): array {
+        // Do something.
+    }
 }
